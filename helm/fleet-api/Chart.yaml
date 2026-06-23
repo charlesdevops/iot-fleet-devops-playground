@@ -1,0 +1,13 @@
+apiVersion: v2
+name: fleet-api
+description: Fleet Registry – edge device & firmware registry Helm chart
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - edge
+  - devices
+  - firmware
+maintainers:
+  - name: Carlo Martini
+    email: carlo89martini@gmail.com

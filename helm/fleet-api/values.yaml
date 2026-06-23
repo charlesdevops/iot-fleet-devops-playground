@@ -1,0 +1,107 @@
+replicaCount: 2
+
+image:
+  repository: ""  # override at install time: --set image.repository=ghcr.io/OWNER/fleet-api
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: fleet-api.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+serviceAccount:
+  create: true
+  name: "fleet-api"
+  # Annotate with the IAM role ARN output from Terraform for IRSA:
+  # annotations:
+  #   eks.amazonaws.com/role-arn: arn:aws:iam::123456789:role/fleet-api-role-dev
+  annotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+# Non-sensitive runtime config (injected via ConfigMap).
+# Sensitive values (AWS credentials) should be provided via IRSA, not hardcoded here.
+config:
+  awsRegion: us-east-1
+  dynamodbTable: devices-dev
+  s3Bucket: fleet-firmware-dev
+  awsEndpointUrl: ""
+
+# ── Observability ────────────────────────────────────────────────────────────
+metrics:
+  # Path FastAPI exposes Prometheus metrics on (served on the app's http port).
+  path: /metrics
+
+# Prometheus Operator ServiceMonitor (requires the CRD to be installed).
+serviceMonitor:
+  enabled: false
+  interval: 30s
+  scrapeTimeout: 10s
+  # Label that selects this ServiceMonitor into your Prometheus instance.
+  labels: {}
+
+# Grafana dashboard delivered as a sidecar-discovered ConfigMap.
+grafanaDashboard:
+  enabled: false
+  # Label the Grafana sidecar watches for.
+  label: grafana_dashboard
+  labelValue: "1"
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8000
+  initialDelaySeconds: 10
+  periodSeconds: 30
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: 8000
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  failureThreshold: 3
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Additional environment variables injected directly into the container.
+# Use for credentials or other values not suitable for the ConfigMap.
+extraEnv: []

@@ -1,0 +1,26 @@
+replicaCount: 1
+
+image:
+  repository: fleet-api
+  tag: local
+  pullPolicy: Never
+
+service:
+  type: NodePort
+
+autoscaling:
+  enabled: false
+
+config:
+  awsRegion: us-east-1
+  dynamodbTable: devices-local
+  s3Bucket: fleet-firmware-local
+  # host.minikube.internal resolves to the host machine from inside minikube pods
+  awsEndpointUrl: http://host.minikube.internal:4566
+
+# LocalStack accepts any non-empty credentials
+extraEnv:
+  - name: AWS_ACCESS_KEY_ID
+    value: test
+  - name: AWS_SECRET_ACCESS_KEY
+    value: test

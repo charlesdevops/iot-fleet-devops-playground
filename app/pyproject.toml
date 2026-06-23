@@ -1,0 +1,39 @@
+[tool.poetry]
+name = "fleet-api"
+version = "0.1.0"
+description = "Fleet Registry – edge device & firmware registry service"
+authors = ["Carlo Martini <carlo89martini@gmail.com>"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.115"
+uvicorn = {version = "^0.30", extras = ["standard"]}
+gunicorn = "^22.0"
+python-multipart = "^0.0.9"
+pydantic-settings = "^2.3"
+prometheus-fastapi-instrumentator = "^7.0"
+python-json-logger = "^2.0"
+boto3 = "^1.34"
+python-dotenv = "^1.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2"
+pytest-cov = "^5.0"
+moto = {version = "^5.0", extras = ["dynamodb", "s3"]}
+httpx = "^0.27"
+ruff = "^0.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "W", "F"]

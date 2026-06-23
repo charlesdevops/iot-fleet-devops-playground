@@ -1,0 +1,161 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ─── Job 1: lint + test (runs on every push / PR) ─────────────────────────
+  lint-and-test:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pip install poetry==1.8.3
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Lint with ruff
+        run: poetry run ruff check fleet_api tests
+
+      - name: Run tests with coverage
+        run: poetry run pytest --cov=fleet_api --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v6
+        with:
+          files: app/coverage.xml
+        continue-on-error: true   # non-blocking; coverage is informational
+
+  # ─── Job 2: build + push Docker image (main branch only) ──────────────────
+  docker-build:
+    name: Docker Build and Push
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: ./app
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/fleet-api:latest
+            ghcr.io/${{ github.repository_owner }}/fleet-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─── Job 3: security scan (main branch only, after image is pushed) ────────
+  security-scan:
+    name: Trivy Security Scan
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Scan image for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/${{ github.repository_owner }}/fleet-api:${{ github.sha }}
+          format: table
+          exit-code: "1"          # fail the pipeline on findings
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL
+
+  # ─── Job 4: helm lint (runs on every push / PR) ────────────────────────────
+  helm-lint:
+    name: Helm Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5
+        with:
+          version: v3.14.0
+
+      - name: Lint Helm chart
+        run: helm lint helm/fleet-api/
+
+      - name: Helm template render
+        run: helm template fleet-api helm/fleet-api/ --set image.repository=ghcr.io/${{ github.repository_owner }}/fleet-api
+
+  # ─── Job 5: Trivy Helm misconfiguration scan (runs on every push / PR) ─────
+  trivy-helm:
+    name: Trivy Helm Misconfig Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Scan Helm chart for misconfigurations
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: 'helm/fleet-api/'
+          scanners: 'misconfig'
+          format: table
+          exit-code: '1'
+          severity: 'HIGH,CRITICAL'
+
+  # ─── Job 6: Trivy Terraform misconfiguration scan (runs on every push / PR) ─
+  trivy-terraform:
+    name: Trivy Terraform Misconfig Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Scan Terraform for misconfigurations
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: 'terraform/'
+          scanners: 'misconfig'
+          format: table
+          exit-code: '1'
+          severity: 'HIGH,CRITICAL'

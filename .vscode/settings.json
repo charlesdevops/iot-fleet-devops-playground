@@ -1,0 +1,5 @@
+{
+    "yaml.schemas": {
+        "https://www.schemastore.org/helmfile.json": "file://wsl%24/Ubuntu/home/charles/scm_native/sre-project/helm/fleet-api/templates/serviceaccount.yaml"
+    }
+}
