@@ -26,19 +26,19 @@ GitHub Actions CI/CD, and a built-in observability stack.
 
 **Stack**
 
-| Layer         | Technology                            |
-| ------------- | ------------------------------------- |
-| API           | Python 3.12 · FastAPI · uvicorn      |
-| Persistence   | AWS DynamoDB (PAY\_PER\_REQUEST)      |
-| Object store  | AWS S3 (SSE-KMS CMK, versioned)       |
-| Encryption    | AWS KMS (CMK, automatic key rotation) |
+| Layer         | Technology                                      |
+| ------------- | ----------------------------------------------- |
+| API           | Python 3.12 · FastAPI · uvicorn               |
+| Persistence   | AWS DynamoDB (PAY\_PER\_REQUEST)                |
+| Object store  | AWS S3 (SSE-KMS CMK, versioned)                 |
+| Encryption    | AWS KMS (CMK, automatic key rotation)           |
 | Observability | Prometheus `/metrics` · JSON logs · Grafana |
-| IaC           | Terraform ≥ 1.5 (hashicorp/aws)      |
-| Container     | Docker multi-stage, non-root user     |
-| Orchestration | Kubernetes · Helm 3                  |
-| Auth (K8s)    | IRSA (IAM Roles for Service Accounts) |
-| CI/CD         | GitHub Actions                        |
-| Local AWS     | LocalStack CE                         |
+| IaC           | Terraform ≥ 1.5 (hashicorp/aws)                |
+| Container     | Docker multi-stage, non-root user               |
+| Orchestration | Kubernetes · Helm 3                            |
+| Auth (K8s)    | IRSA (IAM Roles for Service Accounts)           |
+| CI/CD         | GitHub Actions                                  |
+| Local AWS     | LocalStack CE                                   |
 
 ---
 
@@ -151,13 +151,13 @@ sets `imagePullPolicy: Never`, `NodePort` service, single replica, and routes AW
 
 FastAPI app with automatic OpenAPI docs at `/docs`:
 
-| Method | Path        | Description                                    |
-| ------ | ----------- | ---------------------------------------------- |
-| GET    | /devices    | Scan DynamoDB, return all registered devices   |
-| POST   | /devices    | Upload firmware to S3, write device to DynamoDB |
-| GET    | /healthz    | Liveness/readiness probe target                |
-| GET    | /metrics    | Prometheus metrics                             |
-| GET    | /docs       | Swagger UI (OpenAPI)                           |
+| Method | Path     | Description                                     |
+| ------ | -------- | ----------------------------------------------- |
+| GET    | /devices | Scan DynamoDB, return all registered devices    |
+| POST   | /devices | Upload firmware to S3, write device to DynamoDB |
+| GET    | /healthz | Liveness/readiness probe target                 |
+| GET    | /metrics | Prometheus metrics                              |
+| GET    | /docs    | Swagger UI (OpenAPI)                            |
 
 Configuration is read from environment variables (see [app/.env-example](app/.env-example))
 via `pydantic-settings`.
@@ -361,5 +361,3 @@ directly.
 ```bash
 scripts/smoke.sh https://<your-domain>
 ```
-# iot-fleet-devops-playground
-# iot-fleet-devops-playground
